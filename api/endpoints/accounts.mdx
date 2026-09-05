@@ -1,7 +1,7 @@
 ---
-title: "Accounts API Endpoints — Manage User Accounts"
+title: "Accounts API Endpoints — Create and Manage User Accounts"
 sidebarTitle: "Accounts"
-description: "CRUD endpoints for managing Google accounts via the REST API. Create, retrieve, update, and delete accounts programmatically."
+description: "CRUD endpoints for managing Google accounts via the REST API. Create, retrieve, update, and delete accounts with full request and response examples."
 ---
 
 The Accounts API lets you create and manage Google user accounts through a standard REST interface. Use these endpoints to automate account provisioning, update account settings, and integrate Google account management into your own administrative workflows or internal tooling.
@@ -120,7 +120,7 @@ curl -X POST "https://api.google.com/v1/accounts" \
 
 ## PUT /accounts/\{id\}
 
-Updates an existing account. You may supply any subset of the updatable fields (`name`, `plan`, `settings`) — only the fields present in the request body are modified; all other fields remain unchanged.
+Updates an existing account. You may supply any subset of the updatable fields (`name`, `plan`) — only the fields present in the request body are modified; all other fields remain unchanged.
 
 ### Path Parameters
 
@@ -136,10 +136,6 @@ Updates an existing account. You may supply any subset of the updatable fields (
 
 <ParamField body="plan" type="string">
   The subscription plan to switch the account to. Accepted values: `free`, `standard`, `enterprise`.
-</ParamField>
-
-<ParamField body="settings" type="object">
-  A key-value map of account-level settings to update (e.g. notification preferences, locale). Only the keys present in this object are modified.
 </ParamField>
 
 ### Request Example
@@ -196,11 +192,7 @@ curl -X DELETE "https://api.google.com/v1/accounts/acc_01hwzx3k9v2p8n4q" \
 
 ### Response Example
 
-A successful deletion returns HTTP `204 No Content` with an empty body.
-
-```json
-{}
-```
+A successful deletion returns HTTP `204 No Content` with an empty response body.
 
 ### Error Codes
 

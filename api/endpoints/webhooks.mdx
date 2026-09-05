@@ -1,7 +1,7 @@
 ---
 title: "Webhooks API — Register and Manage Event Subscriptions"
 sidebarTitle: "Webhooks"
-description: "Use the Webhooks API to subscribe to Google platform events. Create, list, and delete webhook endpoints that receive real-time event notifications."
+description: "Use the Webhooks API to subscribe to Google platform events. Register a webhook endpoint and retrieve its configuration for real-time event notifications."
 ---
 
 Webhooks let your application receive real-time HTTP notifications whenever specific events occur on the Google platform. Instead of continuously polling the API for changes, you register a publicly accessible URL and Google will `POST` a JSON payload to that URL the moment a matching event fires. This makes webhooks ideal for keeping downstream systems in sync, triggering automation, or powering event-driven architectures without unnecessary API traffic.
@@ -108,40 +108,6 @@ curl "https://api.google.com/v1/webhooks/wh_01hwzx3k9v2p8n4q" \
   ],
   "created_at": "2024-11-20T10:00:00Z"
 }
-```
-
-### Error Codes
-
-| HTTP Status | Description                                             |
-|-------------|---------------------------------------------------------|
-| `401`       | Missing or invalid API key.                             |
-| `404`       | No webhook found with the provided `id`.                |
-
----
-
-## DELETE /webhooks/\{id\}
-
-Removes a registered webhook. Google will immediately stop delivering events to the associated URL.
-
-### Path Parameters
-
-<ParamField path="id" type="string" required>
-  The unique identifier of the webhook to delete.
-</ParamField>
-
-### Request Example
-
-```bash
-curl -X DELETE "https://api.google.com/v1/webhooks/wh_01hwzx3k9v2p8n4q" \
-  -H "Authorization: Bearer <api_key>"
-```
-
-### Response Example
-
-A successful deletion returns HTTP `204 No Content` with an empty body.
-
-```json
-{}
 ```
 
 ### Error Codes

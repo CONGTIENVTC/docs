@@ -1,5 +1,5 @@
 ---
-title: "Google REST API Reference Overview"
+title: "Google REST API: Base URL, Responses & Rate Limits"
 sidebarTitle: "Overview"
 description: "The Google REST API lets you search, manage accounts, and configure webhooks programmatically. Base URL, versioning, and response formats explained."
 ---
@@ -37,14 +37,14 @@ All request bodies must be sent as JSON. Include the following headers with ever
 A well-formed request looks like:
 
 ```http
-POST /v1/accounts/settings HTTP/1.1
+POST /v1/accounts HTTP/1.1
 Host: api.google.com
 Content-Type: application/json
 Authorization: Bearer YOUR_API_TOKEN
 
 {
-  "notifications_enabled": true,
-  "language": "en-US"
+  "email": "user@example.com",
+  "display_name": "Jane Smith"
 }
 ```
 
@@ -135,6 +135,7 @@ When a request cannot be completed, the API returns a structured error envelope 
 |---|---|---|
 | `400 Bad Request` | `invalid_request` | The request body is malformed, missing required fields, or contains invalid values. |
 | `401 Unauthorized` | `unauthorized` | The `Authorization` header is missing or the token is invalid/expired. |
+| `403 Forbidden` | `forbidden` | The API key is valid but lacks the required scope to access this resource. |
 | `404 Not Found` | `not_found` | The requested resource does not exist. |
 | `429 Too Many Requests` | `rate_limit_exceeded` | You have exceeded your allowed request rate. Check `X-RateLimit-Reset`. |
 | `500 Internal Server Error` | `internal_error` | An unexpected error occurred on Google's servers. Retry with backoff; contact support if it persists. |

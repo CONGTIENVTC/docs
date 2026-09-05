@@ -1,5 +1,5 @@
 ---
-title: "How Google Works: Platform Architecture Overview"
+title: "How the Google Platform Works: A Complete Guide"
 sidebarTitle: "Overview"
 description: "Understand the core building blocks of Google: how search, accounts, APIs, and cloud services connect to power your applications."
 ---
@@ -29,7 +29,7 @@ Every interaction with Google's platform follows a consistent lifecycle. Here is
 
 1. **Authentication** — The request arrives at Google's API gateway. The `Authorization` header is validated: an API key is checked against the issuing account's active keys, or an OAuth 2.0 Bearer token is introspected to confirm scope and expiry.
 2. **Rate-limit check** — After identity is confirmed, the gateway evaluates your account's current usage against its plan quota. Requests that exceed the limit receive a `429 Too Many Requests` response immediately.
-3. **Routing** — Validated requests are routed to the appropriate microservice (e.g., Search, Accounts, Cloud Storage) based on the URL path and HTTP method.
+3. **Routing** — Validated requests are routed to the appropriate service handler based on the URL path and HTTP method.
 4. **Business logic & data retrieval** — The target service executes the operation: running a search query against the index, reading or writing account data, provisioning cloud resources, and so on.
 5. **Response serialization** — Results are serialized to JSON, wrapped in a standard envelope (including metadata such as `request_id` and pagination cursors where applicable), and returned with an appropriate HTTP status code.
 6. **Audit logging** — Every request and its outcome are written to Google's immutable audit log, which is available for review in the Google Cloud Console or via the Logs API.

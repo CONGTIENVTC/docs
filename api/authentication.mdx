@@ -1,5 +1,5 @@
 ---
-title: "Authenticate Requests to the Google API"
+title: "API Key Authentication for the Google REST API"
 sidebarTitle: "Authentication"
 description: "Learn how to authenticate your requests to the Google API using API keys — where to get them, how to pass them, and how to handle auth errors."
 ---
@@ -84,7 +84,7 @@ When creating an API key, you assign it one or more **scopes** that define which
 | `search:read` | Perform search queries and retrieve results. | `GET /v1/search`, `GET /v1/search/suggestions` |
 | `accounts:read` | Read account profile information and settings. | `GET /v1/accounts/me`, `GET /v1/accounts/settings` |
 | `accounts:write` | Update account profile information and settings. | `PUT /v1/accounts/me`, `PATCH /v1/accounts/settings` |
-| `webhooks:manage` | Create, update, list, and delete webhook registrations. | `GET /v1/webhooks`, `POST /v1/webhooks`, `PUT /v1/webhooks/:id`, `DELETE /v1/webhooks/:id` |
+| `webhooks:manage` | Register new webhooks and retrieve existing webhook details. | `POST /v1/webhooks`, `GET /v1/webhooks/{id}` |
 
 Attempting to call an endpoint with a key that lacks the required scope returns a `403 Forbidden` response.
 
