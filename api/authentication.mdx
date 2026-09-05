@@ -1,0 +1,147 @@
+---
+title: "Authenticate Requests to the Google API"
+sidebarTitle: "Authentication"
+description: "Learn how to authenticate your requests to the Google API using API keys — where to get them, how to pass them, and how to handle auth errors."
+---
+
+Every request to the Google REST API must be authenticated. Google uses bearer token authentication via API keys — a secure, revocable credential tied to your account. This page walks you through obtaining your API key, attaching it to requests, understanding scopes, and handling authentication errors gracefully.
+
+## Getting Your API Key
+
+API keys are generated from your Google account settings. Follow these steps:
+
+1. **Sign in** to your Google account at [google.com](https://google.com).
+2. Click your profile avatar in the top-right corner and select **Settings**.
+3. In the left navigation panel, click **API Keys**.
+4. Click **Create Key** in the top-right corner of the API Keys page.
+5. Give your key a descriptive name (e.g., `production-backend` or `dev-testing`) and select the desired **scopes** (see [API Key Scopes](#api-key-scopes) below).
+6. Click **Generate**. Your new API key will be displayed **once** — copy it immediately and store it securely.
+
+<Info>
+  If you lose your API key, you will need to rotate it. Google does not display the full key value again after initial generation.
+</Info>
+
+## Using Your API Key
+
+Pass your API key in the `Authorization` header of every request using the `Bearer` scheme:
+
+```
+Authorization: Bearer YOUR_API_KEY
+```
+
+<CodeGroup>
+
+```bash curl
+curl -X GET "https://api.google.com/v1/search?query=openai" \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json"
+```
+
+```python Python (requests)
+import requests
+
+API_KEY = "YOUR_API_KEY"
+
+response = requests.get(
+    "https://api.google.com/v1/search",
+    headers={
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+    },
+    params={"query": "openai"},
+)
+
+data = response.json()
+print(data)
+```
+
+```javascript JavaScript (fetch)
+const API_KEY = "YOUR_API_KEY";
+
+const response = await fetch(
+  "https://api.google.com/v1/search?query=openai",
+  {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${API_KEY}`,
+      "Content-Type": "application/json",
+    },
+  }
+);
+
+const data = await response.json();
+console.log(data);
+```
+
+</CodeGroup>
+
+## API Key Scopes
+
+When creating an API key, you assign it one or more **scopes** that define which endpoints it is permitted to access. Following the principle of least privilege, you should only grant the scopes your integration actually requires.
+
+| Scope | Description | Endpoints |
+|---|---|---|
+| `search:read` | Perform search queries and retrieve results. | `GET /v1/search`, `GET /v1/search/suggestions` |
+| `accounts:read` | Read account profile information and settings. | `GET /v1/accounts/me`, `GET /v1/accounts/settings` |
+| `accounts:write` | Update account profile information and settings. | `PUT /v1/accounts/me`, `PATCH /v1/accounts/settings` |
+| `webhooks:manage` | Create, update, list, and delete webhook registrations. | `GET /v1/webhooks`, `POST /v1/webhooks`, `PUT /v1/webhooks/:id`, `DELETE /v1/webhooks/:id` |
+
+Attempting to call an endpoint with a key that lacks the required scope returns a `403 Forbidden` response.
+
+## Key Security
+
+<Warning>
+  **Never commit your API key to source control.** Secrets pushed to public (or even private) repositories are a leading cause of credential compromise. Treat your API key like a password.
+
+  Instead, load your key at runtime from an **environment variable**:
+
+  ```bash
+  export GOOGLE_API_KEY="YOUR_API_KEY"
+  ```
+
+  Then reference it in your code:
+
+  ```python
+  import os
+  api_key = os.environ["GOOGLE_API_KEY"]
+  ```
+
+  Use a secrets manager (e.g., AWS Secrets Manager, HashiCorp Vault, Google Secret Manager) for production workloads.
+</Warning>
+
+Additional best practices:
+
+- **Create separate keys per environment** (development, staging, production) so a compromised dev key cannot affect production.
+- **Scope keys minimally** — a key used only for search queries should only have `search:read`.
+- **Audit key usage** regularly via the API Keys page in Settings, which shows last-used timestamps.
+
+## Error Codes
+
+Authentication and authorization failures return standard HTTP error codes with descriptive messages:
+
+| HTTP Status | Scenario | Example `error.message` |
+|---|---|---|
+| `401 Unauthorized` | The `Authorization` header is missing, the token is malformed, or the key has been revoked/deleted. | `"API key is missing or invalid."` |
+| `403 Forbidden` | The API key is valid but does not have the required scope to access the requested endpoint. | `"Insufficient scope. Required: accounts:write."` |
+| `429 Too Many Requests` | The API key has exceeded its rate limit for the current window. | `"Rate limit exceeded. Retry after 1716220800."` |
+
+All error responses follow the [standard error envelope](/api/overview#error-responses) documented in the API overview.
+
+## Rotating Keys
+
+If you suspect a key has been compromised, or as part of routine credential hygiene, you should rotate your API key. Follow these steps to rotate without downtime:
+
+<Steps>
+  <Step title="Generate a new API key">
+    Navigate to **Settings → API Keys → Create Key** and create a new key with the same scopes as the key you are replacing. Note the new key value.
+  </Step>
+  <Step title="Deploy the new key to your application">
+    Update your environment variable or secrets manager with the new API key value. Deploy or restart your application so it begins using the new key for all outgoing requests.
+  </Step>
+  <Step title="Verify the new key is working">
+    Monitor your application logs and the API Keys dashboard to confirm requests are succeeding with the new key. Check that `X-RateLimit-Remaining` is decrementing on the new key, not the old one.
+  </Step>
+  <Step title="Revoke the old key">
+    Once you are confident the new key is fully in use, return to **Settings → API Keys**, find the old key, and click **Revoke**. The old key will be immediately invalidated.
+  </Step>
+</Steps>

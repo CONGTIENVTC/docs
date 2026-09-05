@@ -1,0 +1,157 @@
+---
+title: "Google REST API Reference Overview"
+sidebarTitle: "Overview"
+description: "The Google REST API lets you search, manage accounts, and configure webhooks programmatically. Base URL, versioning, and response formats explained."
+---
+
+The Google REST API gives developers programmatic access to the full suite of Google's platform capabilities — including search, account management, and webhook configuration. Whether you're building integrations, automating workflows, or extending your own products with Google's infrastructure, the REST API provides a consistent, predictable interface backed by the same systems that power Google's own products.
+
+## Base URL
+
+All REST API requests are made to the following base URL:
+
+```
+https://api.google.com/v1
+```
+
+Every endpoint documented in this reference is relative to this base. For example, the search endpoint is accessible at `https://api.google.com/v1/search`.
+
+## Versioning
+
+The Google REST API is versioned via the URL path (e.g., `/v1`). This ensures that breaking changes never silently affect your integration — a new major version means a new path.
+
+- **`v1`** is the current stable version and the recommended choice for all new integrations.
+- When a new major version is released, the previous version enters a **deprecation window** of at least **12 months**, during which it continues to receive security patches but no new features.
+- Deprecation notices are communicated via email to registered API users, the [Google Developer Blog](#), and the `Sunset` response header on affected endpoints.
+- Minor, non-breaking additions (new optional fields, new endpoints) are introduced within the current version without a version bump.
+
+## Request Format
+
+All request bodies must be sent as JSON. Include the following headers with every request:
+
+| Header | Value |
+|---|---|
+| `Content-Type` | `application/json` |
+| `Authorization` | `Bearer <token>` |
+
+A well-formed request looks like:
+
+```http
+POST /v1/accounts/settings HTTP/1.1
+Host: api.google.com
+Content-Type: application/json
+Authorization: Bearer YOUR_API_TOKEN
+
+{
+  "notifications_enabled": true,
+  "language": "en-US"
+}
+```
+
+Requests that omit `Content-Type` or send a malformed JSON body will receive a `400 Bad Request` response.
+
+## Response Format
+
+All successful responses are wrapped in a standard envelope:
+
+```json
+{
+  "data": {
+    "id": "usr_01HXYZ",
+    "email": "user@example.com",
+    "created_at": "2024-03-15T09:00:00Z"
+  },
+  "meta": {
+    "request_id": "req_9kLmN3pQr7",
+    "timestamp": "2024-03-15T09:00:01Z"
+  }
+}
+```
+
+| Field | Description |
+|---|---|
+| `data` | The primary payload of the response. Its shape varies by endpoint. |
+| `meta.request_id` | A unique identifier for the request, useful for debugging and support tickets. |
+| `meta.timestamp` | The UTC timestamp at which the response was generated (ISO 8601). |
+
+## Pagination
+
+Endpoints that return lists support cursor-free, page-based pagination via query parameters:
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `page` | integer | `1` | The page number to retrieve. |
+| `per_page` | integer | `20` | Number of results per page (max: `100`). |
+
+Paginated responses include additional fields in the `meta` object:
+
+```json
+{
+  "data": [...],
+  "meta": {
+    "request_id": "req_4dFgH8jK2w",
+    "timestamp": "2024-03-15T09:01:00Z",
+    "total": 342,
+    "page": 2,
+    "per_page": 20
+  }
+}
+```
+
+| Meta Field | Description |
+|---|---|
+| `meta.total` | Total number of results matching the query across all pages. |
+| `meta.page` | The current page number returned. |
+| `meta.per_page` | The number of results per page used for this response. |
+
+## Rate Limiting
+
+To ensure fair use and platform stability, all API endpoints are rate-limited. The current limits and your consumption are communicated via response headers on every request:
+
+| Header | Description |
+|---|---|
+| `X-RateLimit-Limit` | The maximum number of requests allowed in the current window. |
+| `X-RateLimit-Remaining` | The number of requests you have left in the current window. |
+| `X-RateLimit-Reset` | The Unix timestamp (UTC) at which the current window resets and your limit is restored. |
+
+When you exceed your rate limit, the API returns a `429 Too Many Requests` response. Back off and retry after the time indicated by `X-RateLimit-Reset`. We recommend implementing [exponential backoff](https://en.wikipedia.org/wiki/Exponential_backoff) in your client.
+
+## Error Responses
+
+When a request cannot be completed, the API returns a structured error envelope instead of a `data` payload:
+
+```json
+{
+  "error": {
+    "code": "invalid_request",
+    "message": "The 'query' field is required and cannot be empty."
+  }
+}
+```
+
+### Common Error Codes
+
+| HTTP Status | `error.code` | Description |
+|---|---|---|
+| `400 Bad Request` | `invalid_request` | The request body is malformed, missing required fields, or contains invalid values. |
+| `401 Unauthorized` | `unauthorized` | The `Authorization` header is missing or the token is invalid/expired. |
+| `404 Not Found` | `not_found` | The requested resource does not exist. |
+| `429 Too Many Requests` | `rate_limit_exceeded` | You have exceeded your allowed request rate. Check `X-RateLimit-Reset`. |
+| `500 Internal Server Error` | `internal_error` | An unexpected error occurred on Google's servers. Retry with backoff; contact support if it persists. |
+
+---
+
+<CardGroup cols={2}>
+  <Card title="Authentication" icon="key" href="/api/authentication">
+    Learn how to generate and use API keys to authenticate your requests.
+  </Card>
+  <Card title="Search Endpoints" icon="magnifying-glass" href="/api/endpoints/search">
+    Query the Google Search API to retrieve web, image, and news results.
+  </Card>
+  <Card title="Accounts Endpoints" icon="user" href="/api/endpoints/accounts">
+    Read and update account settings, profiles, and preferences.
+  </Card>
+  <Card title="Webhooks Endpoints" icon="webhook" href="/api/endpoints/webhooks">
+    Register and manage webhooks to receive real-time event notifications.
+  </Card>
+</CardGroup>

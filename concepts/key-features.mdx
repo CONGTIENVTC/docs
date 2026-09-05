@@ -1,0 +1,149 @@
+---
+title: "Core Features of the Google Platform"
+sidebarTitle: "Key Features"
+description: "Explore Google's core features: powerful search, account management, productivity tools, REST API access, and webhook integrations."
+---
+
+Google brings together an expansive set of capabilities — from web-scale search and identity management to cloud productivity tools and a developer-friendly REST API — all accessible through a single platform. This page introduces each major feature area so you can quickly understand what is available and how the pieces fit together.
+
+<Tip>
+  Google's features are designed to complement one another. For example, you can use the Search API to discover resources, manage those resources through Account Management, react to changes in real time via Webhooks, and surface live results directly in a Customizable Dashboard — all within the same application and authenticated with a single API key.
+</Tip>
+
+## Features
+
+<AccordionGroup>
+  <Accordion title="Search & Discovery" icon="magnifying-glass">
+    ### What You Can Search
+
+    Google's search engine covers the open web, Google-hosted content (Drive files, Sites pages, and more), and any custom data sources you connect through the Custom Search API. Results include web pages, images, videos, news articles, maps, and structured knowledge graph entries.
+
+    ### Query Syntax Basics
+
+    The search engine supports a rich set of operators you can embed directly in query strings:
+
+    | Operator | Example | Effect |
+    |---|---|---|
+    | Quoted phrase | `"machine learning"` | Exact phrase match |
+    | `site:` | `site:docs.google.com` | Restrict to a domain |
+    | `filetype:` | `filetype:pdf` | Filter by file type |
+    | `-` (exclude) | `python -snake` | Exclude a term |
+    | `OR` | `cats OR dogs` | Either term |
+    | `after:` / `before:` | `after:2023-01-01` | Date range filtering |
+
+    Programmatic queries submitted through the REST API accept these same operators inside the `q` parameter, letting you build powerful, targeted searches without any additional configuration.
+  </Accordion>
+
+  <Accordion title="Account Management" icon="circle-user">
+    ### Creating Accounts via API
+
+    The Accounts API lets you programmatically create, retrieve, update, and delete Google accounts. This is especially useful for platforms that provision Google Workspace seats on behalf of their own customers.
+
+    ```http
+    POST /v1/accounts
+    Authorization: Bearer {token}
+    Content-Type: application/json
+
+    {
+      "email": "ada@example.com",
+      "name": "Ada Lovelace",
+      "plan": "workspace_business"
+    }
+    ```
+
+    ### Managing Existing Accounts
+
+    Once an account exists, you can:
+
+    - **Update profile information** — name, locale, time zone, and contact details.
+    - **Rotate API keys** — generate new keys and revoke old ones without service interruption.
+    - **Adjust plan or quota** — upgrade or downgrade the account's service plan.
+    - **Audit access** — retrieve a full list of active OAuth tokens and their granted scopes.
+
+    All write operations are protected by the `accounts.write` OAuth scope, while read operations require only `accounts.read`.
+  </Accordion>
+
+  <Accordion title="Cloud Productivity Tools" icon="briefcase">
+    Google's cloud productivity suite is available programmatically through purpose-built APIs, giving you the ability to create, read, update, and organize content at scale.
+
+    | Tool | API | Key Capabilities |
+    |---|---|---|
+    | **Google Docs** | Docs API v1 | Create documents, insert and format content, manage revisions |
+    | **Google Sheets** | Sheets API v4 | Read and write cell values, apply formulas, manage named ranges |
+    | **Google Slides** | Slides API v1 | Build presentations, replace text and images, export to PDF |
+    | **Google Drive** | Drive API v3 | Upload, organize, share, and manage files and folders |
+    | **Google Calendar** | Calendar API v3 | Create events, manage attendees, handle recurring schedules |
+    | **Google Meet** | Meet API | Schedule video conferences and retrieve meeting metadata |
+    | **Gmail** | Gmail API v1 | Send, read, label, and search email; manage drafts and threads |
+
+    All productivity tools authenticate via OAuth 2.0 and respect the permission model of the owning account, so users always remain in control of their data.
+  </Accordion>
+
+  <Accordion title="REST API" icon="code">
+    ### High-Level Capabilities
+
+    Google's REST API is a versioned, resource-oriented interface that exposes the full breadth of the platform. Key characteristics include:
+
+    - **Consistent URL structure** — Resources follow the pattern `/v{version}/{collection}/{id}`, making endpoints predictable and easy to explore.
+    - **Standard HTTP methods** — `GET` retrieves, `POST` creates, `PUT`/`PATCH` updates, and `DELETE` removes resources.
+    - **JSON everywhere** — All request bodies and responses use `application/json`. Dates are ISO 8601, and identifiers are UUIDs.
+    - **Pagination** — List endpoints return a `next_cursor` token you pass as a query parameter to retrieve the next page, enabling efficient traversal of large datasets.
+    - **Field selection** — Use the `fields` query parameter to request only the fields your application needs, reducing payload size.
+    - **Batch requests** — Group up to 100 individual API calls into a single HTTP request using the Batch endpoint to minimize round-trip latency.
+    - **OpenAPI specification** — A machine-readable OpenAPI 3.1 spec is published at `https://api.google.com/openapi.json`, enabling auto-generated SDKs and interactive documentation.
+
+    ### Authentication Methods
+
+    | Method | Best For |
+    |---|---|
+    | API Key | Server-to-server calls, read-heavy workloads |
+    | OAuth 2.0 (Authorization Code) | Apps acting on behalf of a user |
+    | OAuth 2.0 (Service Account) | Backend services without user interaction |
+  </Accordion>
+
+  <Accordion title="Webhooks & Event Notifications" icon="webhook">
+    ### Available Events
+
+    Google can deliver real-time event notifications to any HTTPS endpoint you register. The following event types are currently supported:
+
+    | Event Type | Trigger |
+    |---|---|
+    | `account.created` | A new account was provisioned |
+    | `account.updated` | Account profile or plan was changed |
+    | `account.deleted` | An account was permanently removed |
+    | `search.query.completed` | A programmatic search query finished |
+    | `search.trend.alert` | A monitored keyword crossed a threshold |
+    | `file.created` | A new file was added to Drive |
+    | `file.updated` | A file's content or metadata changed |
+    | `calendar.event.created` | A new Calendar event was created |
+    | `calendar.event.updated` | An existing Calendar event was modified |
+    | `quota.threshold.reached` | API usage reached 80% or 100% of plan quota |
+
+    ### Registering a Subscription
+
+    ```http
+    POST /v1/webhooks/subscriptions
+    Authorization: Bearer {token}
+    Content-Type: application/json
+
+    {
+      "target_url": "https://your-app.example.com/hooks/google",
+      "event_types": ["account.created", "file.updated"],
+      "secret": "your_signing_secret"
+    }
+    ```
+
+    Google signs every delivery with an HMAC-SHA256 signature using your `secret`. Verify the `X-Google-Signature` header on every incoming request to ensure authenticity.
+  </Accordion>
+
+  <Accordion title="Customizable Dashboards" icon="chart-bar">
+    Google's Customizable Dashboard feature lets you and your users compose personal views of the data that matters most to them. From the Google Cloud Console, users can:
+
+    - **Pin widgets** for search analytics, API usage, storage consumption, and recent activity.
+    - **Set date ranges and filters** to focus on a specific product, project, or time window.
+    - **Share dashboard configurations** with teammates by exporting a shareable link or a JSON layout file.
+    - **Embed dashboard panels** in your own application using the Dashboard Embed API, which returns pre-rendered chart iframes authenticated via signed URLs.
+
+    Dashboard layouts and widget preferences are stored as part of the account resource and can be read or updated programmatically through the `/v1/accounts/{id}/dashboard` endpoint.
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,51 @@
+---
+title: "Frequently Asked Questions About Google"
+sidebarTitle: "FAQ"
+description: "Answers to the most common questions about Google accounts, API access, billing, rate limits, and troubleshooting."
+---
+
+Welcome to the Google Help Center. Below you'll find answers to the most frequently asked questions about using Google's products, APIs, and account management. If you don't find what you're looking for, our support team is always happy to help.
+
+<AccordionGroup>
+
+  <Accordion title="How do I get an API key?">
+    To get an API key, sign in to the [Google Cloud Console](https://console.cloud.google.com) and navigate to **APIs & Services > Credentials**. Click **Create Credentials**, select **API key**, and your new key will be generated instantly. Be sure to restrict your key to only the APIs and IP addresses you need for added security.
+  </Accordion>
+
+  <Accordion title="What are the rate limits?">
+    Rate limits vary depending on the API and your plan tier. Free-tier users typically receive up to 100 requests per 100 seconds per user, while paid plans offer significantly higher quotas. You can view your current limits and usage in the [Google Cloud Console](https://console.cloud.google.com) under **APIs & Services > Quotas**.
+  </Accordion>
+
+  <Accordion title="How do I upgrade my plan?">
+    You can upgrade your plan at any time through the [Google Cloud Billing](https://console.cloud.google.com/billing) section of the Cloud Console. Select your billing account, choose **Upgrade**, and follow the prompts to select a plan that fits your usage needs. Upgrades take effect immediately.
+  </Accordion>
+
+  <Accordion title="Can I use the API for free?">
+    Yes — many Google APIs offer a free tier with a generous monthly usage allowance. For example, the Maps API, Natural Language API, and Vision API all include free monthly credits. Once you exceed the free tier limits, standard pay-as-you-go pricing applies based on your usage.
+  </Accordion>
+
+  <Accordion title="How do I reset my password?">
+    To reset your Google account password, go to [accounts.google.com](https://accounts.google.com) and click **Forgot password?** on the sign-in page. Follow the verification steps sent to your recovery email or phone number. For added security, review your recovery options in **Google Account > Security** after resetting.
+  </Accordion>
+
+  <Accordion title="What happens if I exceed my quota?">
+    If you exceed your API quota, requests will return a `429 Too Many Requests` error until the quota resets (typically at midnight Pacific Time) or until you request a quota increase. To avoid service interruptions, implement exponential backoff in your code and monitor your usage regularly. You can request a quota increase in the Cloud Console under **APIs & Services > Quotas**.
+  </Accordion>
+
+  <Accordion title="How do I set up webhooks?">
+    Webhook support varies by Google API. For services like Gmail, Google Calendar, and Pub/Sub, you can configure push notifications through the respective API settings in the Cloud Console. You'll need to provide a publicly accessible HTTPS endpoint and verify domain ownership where required. Refer to the specific API's documentation for step-by-step setup instructions.
+  </Accordion>
+
+  <Accordion title="Is my data stored securely?">
+    Yes. Google uses industry-leading encryption to protect your data — all data is encrypted in transit using TLS and at rest using AES-256 encryption. Google's infrastructure is audited against major compliance standards including ISO 27001, SOC 2/3, and GDPR. You can review Google's full security and privacy practices at [safety.google](https://safety.google).
+  </Accordion>
+
+  <Accordion title="How do I delete my account?">
+    To delete your Google Account, visit [myaccount.google.com](https://myaccount.google.com) and navigate to **Data & Privacy > Delete your Google Account**. Before deleting, you can download a copy of your data using [Google Takeout](https://takeout.google.com). Note that account deletion is permanent and will remove access to all associated Google services and data.
+  </Accordion>
+
+  <Accordion title="Where can I find my billing information?">
+    Your billing information, invoices, and payment history are all available in the [Google Cloud Billing Console](https://console.cloud.google.com/billing). Select your billing account to view current charges, download invoices, update payment methods, and set budget alerts to avoid unexpected costs.
+  </Accordion>
+
+</AccordionGroup>

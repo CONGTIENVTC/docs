@@ -1,0 +1,144 @@
+---
+title: "Configure Your Google Account and API Settings"
+sidebarTitle: "Configuration"
+description: "Learn how to configure your Google account settings, manage API keys, set rate limit preferences, and customize notification settings."
+---
+
+Getting your Google account and API settings configured correctly is essential for a reliable, secure integration. This guide walks you through managing your API keys, understanding your plan's rate limits, setting up notifications, and hardening your account security — so you can focus on building without interruptions.
+
+---
+
+## API Key Management
+
+API keys are the primary credentials used to authenticate requests to the Google API. You should treat them like passwords: create them with purpose, name them clearly, and rotate them regularly.
+
+<Steps>
+  <Step title="Create a New API Key">
+    1. Navigate to the **[Google Developer Console](https://console.developers.google.com)** and sign in.
+    2. Select your project from the project dropdown, or create a new one.
+    3. Go to **APIs & Services → Credentials**.
+    4. Click **Create Credentials** and select **API Key**.
+    5. Your new key will be generated and displayed. Copy it immediately — it will only be shown once in full.
+
+    <Warning>
+      Store your API key in a secure location such as a secrets manager (e.g. AWS Secrets Manager, HashiCorp Vault) or an environment variable. Never hard-code it into source files or commit it to version control.
+    </Warning>
+  </Step>
+
+  <Step title="Name and Scope Your Key">
+    Give each key a descriptive name that identifies its purpose and the application or team using it (e.g. `production-search-service` or `staging-data-pipeline`). 
+
+    Optionally, restrict the key's scope:
+    - **API restrictions** — Limit the key to specific Google APIs (e.g., Search API only).
+    - **Application restrictions** — Restrict usage to specific IP addresses, referrer URLs, or Android/iOS apps.
+
+    Scoped keys reduce your attack surface significantly if a key is ever compromised.
+  </Step>
+
+  <Step title="Rotate an Existing Key">
+    Regular key rotation is a security best practice. To rotate a key:
+
+    1. Create a new API key following the steps above.
+    2. Update your application configuration to use the new key.
+    3. Verify that your application is functioning correctly with the new key.
+    4. Return to **APIs & Services → Credentials**, locate the old key, and click **Delete**.
+
+    <Tip>
+      Schedule key rotations on a calendar (every 90 days is a common standard) to make this a routine maintenance task rather than a reactive one.
+    </Tip>
+  </Step>
+</Steps>
+
+---
+
+## Rate Limits & Quotas
+
+Every Google API plan includes a request quota that resets daily at midnight UTC. Understanding your limits helps you design resilient applications that handle throttling gracefully.
+
+| Plan       | Requests per Day | Requests per Minute | Burst Allowance |
+|------------|-----------------|---------------------|-----------------|
+| Free       | 100             | 10                  | 20              |
+| Standard   | 10,000          | 200                 | 500             |
+| Enterprise | Unlimited       | Custom              | Custom          |
+
+When you exceed your quota, the API returns a `429 Too Many Requests` response. The response includes a `Retry-After` header indicating how many seconds to wait before retrying.
+
+<Warning>
+  Sustained traffic that significantly exceeds your plan limits — even on the Enterprise tier — may trigger automated throttling. If you anticipate high-volume usage, contact support to discuss custom quota arrangements before your launch.
+</Warning>
+
+To monitor your current usage and remaining quota:
+
+1. Open the **Google Developer Console**.
+2. Navigate to **APIs & Services → Dashboard**.
+3. Select your project and click on the **Search API** to view detailed usage graphs and quota consumption.
+
+<Tip>
+  Implement exponential backoff in your client code for `429` responses. Start with a 1-second delay, then double it on each subsequent retry up to a maximum of 60 seconds.
+</Tip>
+
+---
+
+## Notification Preferences
+
+Google can notify you via email or webhook when important events occur — such as approaching your quota limit, detecting unusual API activity, or when a key is used from an unrecognized IP address.
+
+### Email Notifications
+
+1. Go to **Account Settings → Notifications** in the Google Developer Console.
+2. Toggle the events you want to be notified about:
+   - **Quota threshold reached** (configurable at 50%, 80%, and 100%)
+   - **Suspicious activity detected**
+   - **API key usage from new location**
+   - **Billing alerts**
+3. Confirm your notification email address and click **Save Preferences**.
+
+### Webhook Notifications
+
+For programmatic alerting (e.g., routing events to Slack, PagerDuty, or your own monitoring system):
+
+1. Navigate to **Account Settings → Webhooks**.
+2. Click **Add Endpoint** and enter your webhook URL.
+3. Select the event types you want to receive.
+4. Click **Save** — Google will send a verification request to your endpoint.
+5. Respond to the verification request to activate the webhook.
+
+Webhook payloads are delivered as `POST` requests with a JSON body. Each event includes an `event_type`, `timestamp`, and relevant metadata. See the [Webhooks API reference](/api/endpoints/webhooks) for full payload schemas.
+
+---
+
+## Security Settings
+
+Securing your Google account protects both your data and your API usage from unauthorized access.
+
+### Two-Factor Authentication (2FA)
+
+Enabling 2FA adds a second layer of protection to your account login:
+
+1. Go to **Account Settings → Security → Two-Factor Authentication**.
+2. Click **Enable 2FA**.
+3. Choose your preferred method: **Authenticator App** (recommended) or **SMS**.
+4. Follow the on-screen setup instructions and save your backup codes in a safe place.
+
+<Warning>
+  Backup codes are single-use. If you lose access to your 2FA device and don't have backup codes, account recovery may require identity verification with Google support.
+</Warning>
+
+### IP Allowlisting
+
+Restrict API requests to traffic originating from known IP addresses:
+
+1. Navigate to **APIs & Services → Credentials** and select your API key.
+2. Under **Application Restrictions**, choose **IP addresses**.
+3. Enter the IPv4 or IPv6 addresses (or CIDR ranges) that should be allowed.
+4. Click **Save**.
+
+<Tip>
+  For server-side integrations, always use IP allowlisting in production. This prevents your API key from being misused even if it's accidentally exposed.
+</Tip>
+
+### Session Management
+
+Review and revoke active sessions from **Account Settings → Security → Active Sessions**. This page lists all devices and locations where your Google account is currently signed in. Click **Revoke** next to any session you don't recognize or no longer need.
+
+For enhanced control in team environments, administrators can enforce session timeouts and require re-authentication after a configurable period of inactivity from the **Organization Security Policy** panel.

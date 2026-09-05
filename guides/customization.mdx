@@ -1,0 +1,130 @@
+---
+title: "Customize Your Google Dashboard and Search Experience"
+sidebarTitle: "Customization"
+description: "Personalize your Google dashboard, configure search filters, set up saved queries, and tailor the experience to your workflow."
+---
+
+Google is designed to fit the way you work. Whether you prefer a focused single-panel dashboard or a rich multi-widget view, want to run the same searches on a daily schedule, or need results filtered to a specific region and content type — this guide covers everything you need to tailor your Google experience to your workflow.
+
+---
+
+## Dashboard Widgets
+
+The Google dashboard is fully customizable. You can populate it with widgets that surface the information most relevant to you — recent searches, saved queries, API usage metrics, trending topics, and more.
+
+### Adding a Widget
+
+1. Click the **Customize Dashboard** button (grid icon) in the top-right corner of the dashboard.
+2. Browse the **Widget Library** and click **Add** next to any widget you want to include.
+3. The widget will appear on your dashboard. Drag it to your preferred position.
+
+### Removing a Widget
+
+1. Hover over the widget you want to remove.
+2. Click the **⋮** (more options) menu in the widget's top-right corner.
+3. Select **Remove Widget**.
+
+### Rearranging Widgets
+
+Click and hold any widget's header bar, then drag it to a new position on the dashboard grid. Widgets snap to a 12-column grid layout. Release to drop the widget in place.
+
+<Tip>
+  Use the keyboard shortcut **Shift + /** to open the Widget Library without reaching for your mouse. Press **G + D** from anywhere in the app to jump back to the dashboard instantly. See **Account Settings → Keyboard Shortcuts** for a full list of available shortcuts.
+</Tip>
+
+---
+
+## Saved Searches
+
+Saved Searches let you bookmark frequently-used queries so you can re-run them in one click, without retyping parameters or filters every time.
+
+### Creating a Saved Search
+
+1. Run any search using the search bar or the API explorer.
+2. Once results are displayed, click **Save Search** (bookmark icon) near the search bar.
+3. Give your saved search a descriptive name (e.g. `"AI news – English – last 7 days"`).
+4. Optionally, assign it to a **Collection** to keep related searches grouped.
+5. Click **Save**.
+
+### Managing Saved Searches
+
+Navigate to **Dashboard → Saved Searches** to view all your saved queries. From here you can:
+
+- **Run** a saved search by clicking its name.
+- **Edit** the query, filters, or name by clicking the pencil icon.
+- **Duplicate** a search as a starting point for a similar query.
+- **Delete** a search by clicking the trash icon.
+
+You can also set a saved search to **auto-refresh** on a schedule (hourly, daily, or weekly) and have results delivered to you via email or webhook notification.
+
+---
+
+## Search Filters
+
+Search filters let you narrow results to exactly what you need. Filters can be applied interactively in the dashboard or passed as query parameters when using the API.
+
+### Available Filters
+
+| Filter Parameter | Type    | Description                                                  | Example Values                      |
+|-----------------|---------|--------------------------------------------------------------|-------------------------------------|
+| `date_from`     | string  | Return results published on or after this date (ISO 8601)   | `2024-01-01`                        |
+| `date_to`       | string  | Return results published on or before this date (ISO 8601)  | `2024-12-31`                        |
+| `type`          | string  | Filter by content type                                       | `web`, `image`, `news`, `video`     |
+| `region`        | string  | Filter results by geographic region (ISO 3166-1 alpha-2)    | `us`, `gb`, `de`, `jp`, `au`       |
+| `lang`          | string  | Filter results by language (ISO 639-1)                      | `en`, `fr`, `es`, `zh`             |
+| `safe_search`   | boolean | Enable or disable safe search filtering                     | `true`, `false`                     |
+| `site`          | string  | Restrict results to a specific domain                       | `wikipedia.org`, `github.com`      |
+
+### Applying Filters in the Dashboard
+
+1. Run a search from the search bar.
+2. Use the **Filters** panel on the left side of the results page to select values for date range, content type, region, and language.
+3. Results update automatically as you adjust filters.
+4. To save a filtered search, click **Save Search** (see [Saved Searches](#saved-searches) above).
+
+### Applying Filters via the API
+
+Pass filter parameters directly as query string arguments:
+
+```http
+GET /search?q=climate+change&type=news&region=gb&date_from=2024-01-01&lang=en
+```
+
+---
+
+## Language & Region Settings
+
+Your default language and region preferences affect how search results are ranked, localized, and displayed across the dashboard. These defaults apply globally unless overridden by a filter on an individual search.
+
+### Changing Your Locale Preferences
+
+1. Go to **Account Settings → Language & Region**.
+2. Select your preferred **Interface Language** from the dropdown. This changes the language of all dashboard UI elements.
+3. Set your **Default Search Language** — results will be filtered to this language unless you specify otherwise.
+4. Set your **Default Region** — results will be geo-ranked toward this region by default.
+5. Choose your preferred **Date Format** (`MM/DD/YYYY`, `DD/MM/YYYY`, or `YYYY-MM-DD`) and **Timezone**.
+6. Click **Save Settings**.
+
+Changes take effect immediately across your dashboard and all new searches.
+
+---
+
+## Integrations
+
+Google connects with a wide range of third-party tools to fit into your existing workflow. You can push search results to external systems, trigger automations based on query events, or pull data into tools like Slack, Zapier, Notion, and custom dashboards.
+
+### Available Integration Methods
+
+- **Webhooks** — Receive real-time HTTP `POST` notifications when a saved search has new results, a quota threshold is hit, or other configurable events occur. See the [Webhooks API reference](/api/endpoints/webhooks) for setup instructions and full payload schemas.
+- **OAuth Apps** — Connect third-party applications that support Google's OAuth 2.0 flow. Navigate to **Account Settings → Connected Apps** to view, authorize, or revoke access for any linked application.
+- **Zapier & Make (Integromat)** — Use pre-built connectors to link Google events to hundreds of apps without writing code. Find the Google app in each platform's marketplace.
+
+### Setting Up a Webhook Integration
+
+1. Go to **Account Settings → Integrations → Webhooks**.
+2. Click **New Webhook**.
+3. Enter the destination URL where events should be sent.
+4. Select the event triggers (e.g., `search.results_updated`, `quota.threshold_reached`).
+5. Click **Save** and confirm the verification request sent to your endpoint.
+
+Once active, your webhook endpoint will receive structured JSON payloads for each triggered event. For full payload documentation and event type schemas, refer to the [Webhooks API reference](/api/endpoints/webhooks).

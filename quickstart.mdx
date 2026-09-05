@@ -1,47 +1,98 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with Google in Under 5 Minutes"
+sidebarTitle: "Quickstart"
+description: "Learn how to create your account, get your API key, and make your first API call to Google in under 5 minutes."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+This guide walks you through everything you need to go from zero to your first successful Google API call. By the end, you'll have a working account, a valid API key, and a real search response in hand — all in under five minutes.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Create Your Account">
+    Head to [accounts.google.com](https://accounts.google.com) and click **Create account**. Fill in your name, choose a Gmail address, and set a strong password. Once submitted, Google will send a verification email — confirm it to unlock full platform and API access.
 
-    ```bash
-    npm install your-package
-    ```
+    For a detailed walkthrough including workspace configuration and two-factor authentication setup, see the [Account Setup guide](/account-setup).
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
+  <Step title="Get Your API Key">
+    Once your account is active:
 
-    ```bash
-    your-cli init
-    ```
+    1. Sign in and open the [Google Cloud Console](https://console.cloud.google.com).
+    2. Select or create a **Project** from the top navigation bar.
+    3. In the left sidebar, navigate to **APIs & Services → Credentials**.
+    4. Click **Create Credentials** and select **API key**.
+    5. Copy the generated key and store it somewhere safe — you'll use it in every API request.
+
+    <Warning>
+      Never expose your API key in client-side code or public repositories. Treat it like a password.
+    </Warning>
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
+  <Step title="Make Your First API Call">
+    With your API key ready, you can run a search query against Google's API. The example below calls `GET /search` with a query parameter of `hello`:
 
-    ```bash
-    your-cli start
+    <CodeGroup>
+      ```bash curl
+      curl -G "https://api.google.com/search" \
+        --data-urlencode "q=hello" \
+        -H "Authorization: Bearer YOUR_API_KEY"
+      ```
+
+      ```python Python
+      import requests
+
+      API_KEY = "YOUR_API_KEY"
+
+      response = requests.get(
+          "https://api.google.com/search",
+          params={"q": "hello"},
+          headers={"Authorization": f"Bearer {API_KEY}"},
+      )
+
+      data = response.json()
+      print(data)
+      ```
+    </CodeGroup>
+
+    Replace `YOUR_API_KEY` with the key you generated in the previous step.
+  </Step>
+  <Step title="Handle the Response">
+    A successful request returns a `200 OK` status and a JSON body structured like this:
+
+    ```json
+    {
+      "status": "success",
+      "query": "hello",
+      "total_results": 4820000000,
+      "results": [
+        {
+          "title": "Hello - Wikipedia",
+          "url": "https://en.wikipedia.org/wiki/Hello",
+          "snippet": "Hello is a salutation or greeting in the English language..."
+        },
+        {
+          "title": "Hello World — Getting Started Guide",
+          "url": "https://developers.google.com/hello-world",
+          "snippet": "A classic starting point for every developer exploring the Google API..."
+        }
+      ],
+      "page": 1,
+      "per_page": 10
+    }
     ```
+
+    Use the `results` array to display, process, or store the search data in your application. Paginate through results using the `page` query parameter.
   </Step>
 </Steps>
 
-<Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
+<Note>
+  Google's API enforces rate limits based on your account tier. Free accounts are limited to **100 requests per day**. Standard and Enterprise plans offer higher quotas. If you exceed your limit, the API returns a `429 Too Many Requests` response. See the [API Reference](/api/overview) for full rate limit details and best practices for managing quota.
+</Note>
 
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
-</Tip>
+## What's Next?
+
+<CardGroup cols={2}>
+  <Card title="Your First Integration" icon="puzzle-piece" href="/guides/first-integration">
+    Follow a step-by-step guide to building your first end-to-end integration with Google's API.
+  </Card>
+  <Card title="API Reference" icon="code" href="/api/overview">
+    Explore all available endpoints, request parameters, response schemas, and error codes.
+  </Card>
+</CardGroup>

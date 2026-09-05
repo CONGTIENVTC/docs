@@ -1,0 +1,56 @@
+---
+title: "How Google Works: Platform Architecture Overview"
+sidebarTitle: "Overview"
+description: "Understand the core building blocks of Google: how search, accounts, APIs, and cloud services connect to power your applications."
+---
+
+Google is a full-featured platform that unifies powerful search, identity and account management, productivity tools, and a robust REST API under a single, cohesive infrastructure. Whether you're querying the web, managing users programmatically, or building integrations with webhooks, every capability is designed to work together seamlessly — giving your applications a reliable, scalable foundation from day one.
+
+## Platform Components
+
+<CardGroup cols={2}>
+  <Card title="Search Engine" icon="magnifying-glass">
+    Google's core search engine indexes billions of documents and surfaces the most relevant results in milliseconds. It supports structured queries, filters, and rich snippets, making it the backbone of discovery across all Google products.
+  </Card>
+  <Card title="Account System" icon="circle-user">
+    The Account System manages identity, authentication, and authorization for every user and service. Accounts act as the root resource in the data model — all API keys, preferences, and usage quotas are scoped to an account.
+  </Card>
+  <Card title="REST API" icon="code">
+    Google exposes its full feature set through a versioned, resource-oriented REST API. Requests are authenticated with API keys or OAuth 2.0 tokens, and every endpoint returns consistent JSON responses with predictable error shapes.
+  </Card>
+  <Card title="Webhooks & Integrations" icon="webhook">
+    Webhooks let your application subscribe to real-time events — search trend alerts, account changes, quota thresholds, and more. Google delivers signed event payloads to your endpoint so you can react without polling.
+  </Card>
+</CardGroup>
+
+## Request Lifecycle
+
+Every interaction with Google's platform follows a consistent lifecycle. Here is what happens from the moment your application fires an API request to the moment it receives a response:
+
+1. **Authentication** — The request arrives at Google's API gateway. The `Authorization` header is validated: an API key is checked against the issuing account's active keys, or an OAuth 2.0 Bearer token is introspected to confirm scope and expiry.
+2. **Rate-limit check** — After identity is confirmed, the gateway evaluates your account's current usage against its plan quota. Requests that exceed the limit receive a `429 Too Many Requests` response immediately.
+3. **Routing** — Validated requests are routed to the appropriate microservice (e.g., Search, Accounts, Cloud Storage) based on the URL path and HTTP method.
+4. **Business logic & data retrieval** — The target service executes the operation: running a search query against the index, reading or writing account data, provisioning cloud resources, and so on.
+5. **Response serialization** — Results are serialized to JSON, wrapped in a standard envelope (including metadata such as `request_id` and pagination cursors where applicable), and returned with an appropriate HTTP status code.
+6. **Audit logging** — Every request and its outcome are written to Google's immutable audit log, which is available for review in the Google Cloud Console or via the Logs API.
+
+## Environments
+
+<Steps>
+  <Step title="Single Production Environment">
+    Google operates a single, globally distributed production environment reachable at `https://api.google.com`. All traffic — from exploratory prototyping to production workloads — is served by the same hardened infrastructure, so the behavior you observe during development is exactly what your users will experience.
+  </Step>
+  <Step title="API Versioning for Safe Iteration">
+    Breaking changes are never introduced within a major API version. New major versions (e.g., `/v1/` → `/v2/`) are announced with a deprecation timeline, giving you a migration window before the older version is retired.
+  </Step>
+  <Step title="Sandbox Mode via Test Credentials">
+    Developers who need a consequence-free environment for automated testing can request **Sandbox API keys** from the Google Cloud Console. Requests made with sandbox keys execute the full request lifecycle but do not consume production quota, affect live data, or trigger outbound webhooks to external endpoints.
+  </Step>
+  <Step title="Staging Webhook Endpoint">
+    When testing webhook integrations, point your subscription to a local or staging URL. Google's webhook delivery system respects the target URL registered on each subscription, so you can safely receive and inspect event payloads without affecting production consumers.
+  </Step>
+</Steps>
+
+<Note>
+  All API endpoints use TLS 1.2 or higher. Connections over plain HTTP are automatically rejected. Sandbox and production requests share the same URL schema — only the API key determines which environment your request is executed in.
+</Note>

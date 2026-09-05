@@ -1,0 +1,218 @@
+---
+title: "Google Data Model: Accounts, Resources, and Events"
+sidebarTitle: "Data Model"
+description: "Learn how Google structures data: the Account object, resource types, search results, and event payloads used throughout the API."
+---
+
+Every interaction with the Google platform ultimately touches one of a small set of core object types. Understanding these objects — and the fields they expose — makes it easier to design integrations, interpret API responses, and build reliable event-driven workflows. This page documents the three most fundamental objects: the **Account**, the **Search Result**, and the **Webhook Event Payload**.
+
+---
+
+## The Account Object
+
+The Account is the root resource in Google's data model. All API keys, product subscriptions, quotas, and user-owned data are scoped to an account. You will encounter the Account object whenever you create or manage users, rotate credentials, or check plan limits.
+
+<ResponseField name="id" type="string" required>
+  Globally unique identifier for the account. Format: UUIDv4. This value is immutable and assigned by Google at account creation time.
+
+  Example: `"a1b2c3d4-e5f6-7890-abcd-ef1234567890"`
+</ResponseField>
+
+<ResponseField name="email" type="string" required>
+  The primary email address associated with the account. Used for login, notifications, and as the human-readable account identifier. Must be unique across all Google accounts.
+
+  Example: `"ada@example.com"`
+</ResponseField>
+
+<ResponseField name="name" type="string" required>
+  The display name of the account holder — typically a person's full name or an organization name.
+
+  Example: `"Ada Lovelace"`
+</ResponseField>
+
+<ResponseField name="created_at" type="string (ISO 8601)" required>
+  The UTC timestamp at which the account was created. Read-only.
+
+  Example: `"2024-03-15T09:22:04Z"`
+</ResponseField>
+
+<ResponseField name="plan" type="string" required>
+  The account's current service plan. Determines available quotas and product features. Possible values: `free`, `workspace_starter`, `workspace_business`, `workspace_enterprise`.
+
+  Example: `"workspace_business"`
+</ResponseField>
+
+<ResponseField name="api_keys" type="array of objects">
+  A list of active API keys associated with the account. Each entry contains the key's `id`, a `masked_key` (showing only the last four characters), a `label` for human identification, and a `created_at` timestamp. The raw key value is only returned at creation time and cannot be retrieved again.
+
+  See the [API Keys guide](/account-setup) for creation and rotation instructions.
+</ResponseField>
+
+### Example Account Object
+
+```json
+{
+  "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+  "email": "ada@example.com",
+  "name": "Ada Lovelace",
+  "created_at": "2024-03-15T09:22:04Z",
+  "plan": "workspace_business",
+  "api_keys": [
+    {
+      "id": "key_01HX9MNPQR2S3T4U5V6W7X8Y9Z",
+      "label": "Production server",
+      "masked_key": "AIzaSy...7k3Q",
+      "created_at": "2024-03-15T09:25:11Z"
+    },
+    {
+      "id": "key_02AZBCDEFGH1JKL2MNO3PQR4ST",
+      "label": "CI / CD pipeline",
+      "masked_key": "AIzaSy...m9Xp",
+      "created_at": "2024-06-01T14:03:55Z"
+    }
+  ]
+}
+```
+
+---
+
+## The Search Result Object
+
+The Search Result object represents a single item returned by the Google Search API. A typical API response contains an array of these objects inside a `results` field, alongside pagination metadata. Each result corresponds to a document or resource that matched the submitted query.
+
+<ResponseField name="id" type="string" required>
+  A stable, Google-assigned identifier for the indexed document. Useful for deduplication when the same document appears across multiple queries.
+
+  Example: `"sr_7fKqBzVwXpL9mNdYcR3tAoUjEh"`
+</ResponseField>
+
+<ResponseField name="title" type="string" required>
+  The title of the document as indexed by Google. For web pages this is the HTML `<title>` tag content; for Drive files it is the file name.
+
+  Example: `"Getting Started with the Google Sheets API"`
+</ResponseField>
+
+<ResponseField name="url" type="string" required>
+  The canonical URL of the result. For public web pages this is the live page URL; for private Drive documents it is the Drive viewer URL (access is still governed by sharing permissions).
+
+  Example: `"https://developers.google.com/sheets/api/guides/concepts"`
+</ResponseField>
+
+<ResponseField name="snippet" type="string">
+  A short, query-relevant excerpt from the document body, with matching terms highlighted using `<em>` tags. May be `null` if no meaningful snippet could be generated (e.g., for image or video results).
+
+  Example: `"Learn how <em>Sheets API</em> lets you read and modify any aspect of a spreadsheet..."`
+</ResponseField>
+
+<ResponseField name="relevance_score" type="number">
+  A float between `0.0` and `1.0` indicating how closely the result matches the query, as estimated by Google's ranking model. Higher is more relevant. Scores are relative within a single response and should not be compared across different queries.
+
+  Example: `0.94`
+</ResponseField>
+
+### Example Search Result Object
+
+```json
+{
+  "id": "sr_7fKqBzVwXpL9mNdYcR3tAoUjEh",
+  "title": "Getting Started with the Google Sheets API",
+  "url": "https://developers.google.com/sheets/api/guides/concepts",
+  "snippet": "Learn how <em>Sheets API</em> lets you read and modify any aspect of a spreadsheet, including content, formatting, and structure.",
+  "relevance_score": 0.94
+}
+```
+
+A full search response looks like this:
+
+```json
+{
+  "query": "Google Sheets API getting started",
+  "total_results": 4820000,
+  "results": [
+    {
+      "id": "sr_7fKqBzVwXpL9mNdYcR3tAoUjEh",
+      "title": "Getting Started with the Google Sheets API",
+      "url": "https://developers.google.com/sheets/api/guides/concepts",
+      "snippet": "Learn how <em>Sheets API</em> lets you read and modify any aspect of a spreadsheet...",
+      "relevance_score": 0.94
+    },
+    {
+      "id": "sr_3pLmNvRwQsT8uXyZaB1cDeFgHiJ",
+      "title": "Google Sheets API Quickstart — Node.js",
+      "url": "https://developers.google.com/sheets/api/quickstart/nodejs",
+      "snippet": "Complete the steps described in the rest of this page, and in about <em>five minutes</em> you'll have a simple Node.js command-line application...",
+      "relevance_score": 0.88
+    }
+  ],
+  "next_cursor": "eyJwYWdlIjoyfQ==",
+  "request_id": "req_4Tz9XmKqRnLvYcPbWaFsJdUhEo"
+}
+```
+
+---
+
+## The Webhook Event Payload
+
+When a subscribed event occurs, Google constructs an event payload and delivers it via an HTTP `POST` request to your registered endpoint. All event types share the same outer envelope structure; the `data` field contains the event-specific body.
+
+<ResponseField name="event_type" type="string" required>
+  A dot-separated string identifying the category and action of the event.
+
+  Example: `"account.updated"` — see [Webhooks & Event Notifications](/concepts/key-features#webhooks--event-notifications) for the full list of supported event types.
+</ResponseField>
+
+<ResponseField name="event_id" type="string" required>
+  A unique identifier for this specific delivery attempt. Use this to deduplicate events if your endpoint receives the same delivery more than once (Google retries on non-2xx responses using exponential backoff).
+
+  Example: `"evt_2Kx8PqRsNmYvUwLbTdFjCzAhGo"`
+</ResponseField>
+
+<ResponseField name="timestamp" type="string (ISO 8601)" required>
+  The UTC time at which the event occurred on Google's side. Note that this may differ slightly from the delivery time depending on queue depth.
+
+  Example: `"2024-09-10T11:47:33Z"`
+</ResponseField>
+
+<ResponseField name="api_version" type="string" required>
+  The API version used to serialize the `data` payload. Pin your deserialization logic to this version to avoid breaking changes.
+
+  Example: `"v1"`
+</ResponseField>
+
+<ResponseField name="data" type="object" required>
+  The event-specific payload. The shape of this object varies by `event_type`. For `account.*` events it contains the full Account object; for `file.*` events it contains the affected file resource; for `search.trend.alert` it contains the keyword and threshold details.
+</ResponseField>
+
+### Example Webhook Event Payload
+
+```json
+{
+  "event_type": "account.updated",
+  "event_id": "evt_2Kx8PqRsNmYvUwLbTdFjCzAhGo",
+  "timestamp": "2024-09-10T11:47:33Z",
+  "api_version": "v1",
+  "data": {
+    "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "email": "ada@example.com",
+    "name": "Ada Lovelace",
+    "created_at": "2024-03-15T09:22:04Z",
+    "plan": "workspace_enterprise",
+    "api_keys": [
+      {
+        "id": "key_01HX9MNPQR2S3T4U5V6W7X8Y9Z",
+        "label": "Production server",
+        "masked_key": "AIzaSy...7k3Q",
+        "created_at": "2024-03-15T09:25:11Z"
+      }
+    ]
+  }
+}
+```
+
+<Note>
+  Always verify the `X-Google-Signature` header before processing an incoming event. Compute `HMAC-SHA256(secret, raw_request_body)` and compare it to the header value using a constant-time comparison function. Reject any request where the signatures do not match.
+</Note>
+
+<Warning>
+  Event payloads represent the state of the resource **at the time the event was generated**. If your endpoint experiences downtime and receives retried events out of order, use the `timestamp` field — not delivery order — to determine which payload reflects the most recent state.
+</Warning>

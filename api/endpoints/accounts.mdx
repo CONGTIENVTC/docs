@@ -1,0 +1,210 @@
+---
+title: "Accounts API Endpoints — Manage User Accounts"
+sidebarTitle: "Accounts"
+description: "CRUD endpoints for managing Google accounts via the REST API. Create, retrieve, update, and delete accounts programmatically."
+---
+
+The Accounts API lets you create and manage Google user accounts through a standard REST interface. Use these endpoints to automate account provisioning, update account settings, and integrate Google account management into your own administrative workflows or internal tooling.
+
+All endpoints require a valid API key passed in the `Authorization: Bearer <api_key>` header.
+
+---
+
+## Account Object
+
+Every endpoint that returns an account uses the following schema.
+
+| Field        | Type   | Description                                                                          |
+|--------------|--------|--------------------------------------------------------------------------------------|
+| `id`         | string | Unique identifier for the account.                                                   |
+| `email`      | string | The email address associated with the account.                                       |
+| `name`       | string | The display name of the account holder.                                              |
+| `plan`       | string | The account's subscription plan: `free`, `standard`, or `enterprise`.               |
+| `created_at` | string | ISO 8601 timestamp of when the account was created.                                  |
+| `updated_at` | string | ISO 8601 timestamp of the most recent update to the account.                        |
+
+---
+
+## GET /accounts/\{id\}
+
+Retrieves the details of a single Google account by its unique ID.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the account to retrieve.
+</ParamField>
+
+### Request Example
+
+```bash
+curl "https://api.google.com/v1/accounts/acc_01hwzx3k9v2p8n4q" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response Example
+
+```json
+{
+  "id": "acc_01hwzx3k9v2p8n4q",
+  "email": "jane.doe@example.com",
+  "name": "Jane Doe",
+  "plan": "standard",
+  "created_at": "2024-03-15T08:30:00Z",
+  "updated_at": "2024-11-01T14:22:10Z"
+}
+```
+
+### Error Codes
+
+| HTTP Status | Description                                             |
+|-------------|---------------------------------------------------------|
+| `401`       | Missing or invalid API key.                             |
+| `404`       | No account found with the provided `id`.                |
+
+---
+
+## POST /accounts
+
+Creates a new Google account. On success, returns the full account object including the server-assigned `id` and timestamps.
+
+### Body Parameters
+
+<ParamField body="email" type="string" required>
+  The email address for the new account. Must be a valid email and unique across the platform.
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  The display name for the account holder (e.g. `"Jane Doe"`).
+</ParamField>
+
+<ParamField body="plan" type="string" required>
+  The subscription plan to assign to the new account. Accepted values: `free`, `standard`, `enterprise`.
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST "https://api.google.com/v1/accounts" \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "jane.doe@example.com",
+    "name": "Jane Doe",
+    "plan": "standard"
+  }'
+```
+
+### Response Example
+
+```json
+{
+  "id": "acc_01hwzx3k9v2p8n4q",
+  "email": "jane.doe@example.com",
+  "name": "Jane Doe",
+  "plan": "standard",
+  "created_at": "2024-03-15T08:30:00Z",
+  "updated_at": "2024-03-15T08:30:00Z"
+}
+```
+
+### Error Codes
+
+| HTTP Status | Description                                                                              |
+|-------------|------------------------------------------------------------------------------------------|
+| `400`       | Missing required fields, invalid `plan` value, or malformed `email`.                    |
+| `401`       | Missing or invalid API key.                                                              |
+| `409`       | An account with the provided `email` already exists.                                     |
+
+---
+
+## PUT /accounts/\{id\}
+
+Updates an existing account. You may supply any subset of the updatable fields (`name`, `plan`, `settings`) — only the fields present in the request body are modified; all other fields remain unchanged.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the account to update.
+</ParamField>
+
+### Body Parameters
+
+<ParamField body="name" type="string">
+  A new display name for the account holder.
+</ParamField>
+
+<ParamField body="plan" type="string">
+  The subscription plan to switch the account to. Accepted values: `free`, `standard`, `enterprise`.
+</ParamField>
+
+<ParamField body="settings" type="object">
+  A key-value map of account-level settings to update (e.g. notification preferences, locale). Only the keys present in this object are modified.
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X PUT "https://api.google.com/v1/accounts/acc_01hwzx3k9v2p8n4q" \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Jane Smith",
+    "plan": "enterprise"
+  }'
+```
+
+### Response Example
+
+```json
+{
+  "id": "acc_01hwzx3k9v2p8n4q",
+  "email": "jane.doe@example.com",
+  "name": "Jane Smith",
+  "plan": "enterprise",
+  "created_at": "2024-03-15T08:30:00Z",
+  "updated_at": "2024-11-20T09:45:33Z"
+}
+```
+
+### Error Codes
+
+| HTTP Status | Description                                                                 |
+|-------------|-----------------------------------------------------------------------------|
+| `400`       | Invalid field values (e.g. unrecognised `plan`).                            |
+| `401`       | Missing or invalid API key.                                                 |
+| `404`       | No account found with the provided `id`.                                    |
+
+---
+
+## DELETE /accounts/\{id\}
+
+Permanently deletes a Google account and all associated data. **This action is irreversible.**
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the account to delete.
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X DELETE "https://api.google.com/v1/accounts/acc_01hwzx3k9v2p8n4q" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response Example
+
+A successful deletion returns HTTP `204 No Content` with an empty body.
+
+```json
+{}
+```
+
+### Error Codes
+
+| HTTP Status | Description                                              |
+|-------------|----------------------------------------------------------|
+| `401`       | Missing or invalid API key.                              |
+| `404`       | No account found with the provided `id`.                 |

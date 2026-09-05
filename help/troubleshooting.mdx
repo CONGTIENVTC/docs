@@ -1,0 +1,157 @@
+---
+title: "Troubleshooting Common Google API Issues"
+sidebarTitle: "Troubleshooting"
+description: "Diagnose and fix common issues with the Google API — including authentication errors, rate limiting, timeout handling, and webhook failures."
+---
+
+This guide covers the most common issues developers encounter when integrating with Google APIs and how to resolve them quickly. Whether you're dealing with authentication failures, unexpected search results, webhook delivery problems, or performance bottlenecks, the sections below will help you diagnose and fix the issue.
+
+---
+
+## Authentication Errors
+
+Authentication issues are among the most frequent problems when working with Google APIs. The table below outlines the most common HTTP error codes, what they mean, and how to resolve them.
+
+| Error Code | Meaning | Resolution |
+|---|---|---|
+| `401 Unauthorized` | The request is missing a valid API key or the provided key is invalid/expired. | Verify that your API key is correctly included in the request (as a query parameter `?key=YOUR_API_KEY` or in the `Authorization` header). Regenerate the key in the [Cloud Console](https://console.cloud.google.com/apis/credentials) if needed. |
+| `403 Forbidden` | The API key is valid, but it lacks the permissions required to access the requested resource. | Ensure the relevant API is enabled for your project in **APIs & Services > Library**, and that your key's restrictions (IP, referrer, API scope) aren't blocking the request. Check IAM roles if using service accounts. |
+| `429 Too Many Requests` | Your application has exceeded the allowed rate limit or quota for the API. | Implement exponential backoff and retry logic in your code. Review your current quota usage in **APIs & Services > Quotas** and request an increase if your workload requires it. |
+
+---
+
+## Search Issues
+
+### No Results Returned
+
+If a query returns zero results, verify that the search index has been populated and that your query syntax is valid. Check for overly restrictive filters (such as date ranges or language codes) that may be excluding all results. Try simplifying the query to confirm the API is reachable and the dataset is non-empty.
+
+### Unexpected Results
+
+Unexpected or irrelevant results are often caused by ambiguous query terms or missing contextual parameters. Refine your query by adding field-specific filters, adjusting relevance settings, or using exact-match syntax (e.g., wrapping phrases in quotes). Review the API's query language documentation to ensure you're using the correct operators.
+
+### Encoding Issues
+
+If you're seeing garbled characters or malformed query strings, ensure all query parameters are properly URL-encoded before sending the request. Special characters such as `&`, `+`, `=`, and non-ASCII characters must be percent-encoded. Most HTTP client libraries handle this automatically — confirm that you're not double-encoding values, which can also cause unexpected behavior.
+
+---
+
+## Webhook Failures
+
+### Checking Delivery Logs
+
+When a webhook event fails to deliver, start by reviewing the delivery logs in the relevant Google service console (e.g., Google Cloud Pub/Sub, Gmail Push Notifications). Logs will show the HTTP status code returned by your endpoint, the timestamp, and any error messages. A `4xx` response indicates an issue with your endpoint configuration; a `5xx` response suggests a server-side error on your receiving service.
+
+### Debugging Your Endpoint
+
+Ensure your webhook endpoint:
+- Is publicly accessible over **HTTPS** (self-signed certificates are not accepted).
+- Returns a `200 OK` response within the expected timeout window (typically 10–30 seconds).
+- Correctly handles duplicate deliveries, as Google may retry events that do not receive a timely acknowledgment.
+
+### Retrying Failed Events
+
+For Pub/Sub-based webhooks, unacknowledged messages are automatically retried according to your subscription's retry policy. You can configure the retry backoff and maximum delivery attempts in the subscription settings. For other APIs, consult the specific documentation to trigger manual redelivery or replay missed events from the audit log.
+
+---
+
+## Timeout & Performance
+
+### Recommended Timeout Settings
+
+Set your HTTP client timeout to at least **30 seconds** for standard API calls and **120 seconds** for long-running operations or batch requests. Timeouts that are too short will cause premature failures under normal network latency conditions; too long and your application may hang on genuinely failed requests.
+
+### Retry Strategy with Exponential Backoff
+
+When requests fail due to transient errors (`429`, `500`, `503`), use an exponential backoff strategy to avoid overwhelming the API and to give the service time to recover. The examples below demonstrate a robust retry pattern in Python and JavaScript.
+
+<CodeGroup>
+
+```python Python
+import time
+import requests
+
+def call_google_api(url, params, max_retries=5):
+    """Call a Google API with exponential backoff retry logic."""
+    for attempt in range(max_retries):
+        try:
+            response = requests.get(url, params=params, timeout=30)
+
+            # Success — return the response
+            if response.status_code == 200:
+                return response.json()
+
+            # Retryable errors
+            if response.status_code in (429, 500, 503):
+                wait_time = (2 ** attempt) + 0.5  # e.g., 1.5s, 2.5s, 4.5s, 8.5s ...
+                print(f"Attempt {attempt + 1} failed ({response.status_code}). "
+                      f"Retrying in {wait_time:.1f}s...")
+                time.sleep(wait_time)
+                continue
+
+            # Non-retryable error — raise immediately
+            response.raise_for_status()
+
+        except requests.exceptions.Timeout:
+            wait_time = 2 ** attempt
+            print(f"Request timed out. Retrying in {wait_time}s...")
+            time.sleep(wait_time)
+
+    raise Exception(f"API request failed after {max_retries} attempts.")
+```
+
+```javascript JavaScript
+async function callGoogleApi(url, params, maxRetries = 5) {
+  const queryString = new URLSearchParams(params).toString();
+  const fullUrl = `${url}?${queryString}`;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+    try {
+      const response = await fetch(fullUrl, { signal: controller.signal });
+      clearTimeout(timeoutId);
+
+      // Success — return parsed JSON
+      if (response.ok) {
+        return await response.json();
+      }
+
+      // Retryable errors
+      if ([429, 500, 503].includes(response.status)) {
+        const waitTime = Math.pow(2, attempt) * 1000 + 500; // ms
+        console.warn(
+          `Attempt ${attempt + 1} failed (${response.status}). ` +
+          `Retrying in ${waitTime / 1000}s...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+        continue;
+      }
+
+      // Non-retryable error — throw immediately
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
+
+    } catch (error) {
+      clearTimeout(timeoutId);
+      if (error.name === "AbortError") {
+        const waitTime = Math.pow(2, attempt) * 1000;
+        console.warn(`Request timed out. Retrying in ${waitTime / 1000}s...`);
+        await new Promise((resolve) => setTimeout(resolve, waitTime));
+      } else {
+        throw error;
+      }
+    }
+  }
+
+  throw new Error(`API request failed after ${maxRetries} attempts.`);
+}
+```
+
+</CodeGroup>
+
+---
+
+<Card title="Still need help? Contact Support" icon="envelope" href="mailto:support@google.com">
+  If you've worked through this guide and are still experiencing issues, our support team is ready to help. Reach out to us at **support@google.com** with a description of the problem, the relevant error codes, and any request/response logs you can share — we'll get back to you as quickly as possible.
+</Card>

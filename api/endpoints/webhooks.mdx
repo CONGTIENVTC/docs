@@ -1,0 +1,277 @@
+---
+title: "Webhooks API — Register and Manage Event Subscriptions"
+sidebarTitle: "Webhooks"
+description: "Use the Webhooks API to subscribe to Google platform events. Create, list, and delete webhook endpoints that receive real-time event notifications."
+---
+
+Webhooks let your application receive real-time HTTP notifications whenever specific events occur on the Google platform. Instead of continuously polling the API for changes, you register a publicly accessible URL and Google will `POST` a JSON payload to that URL the moment a matching event fires. This makes webhooks ideal for keeping downstream systems in sync, triggering automation, or powering event-driven architectures without unnecessary API traffic.
+
+---
+
+## Available Events
+
+Subscribe to one or more of the following event types when registering a webhook.
+
+| Event Type             | Description                                                                 |
+|------------------------|-----------------------------------------------------------------------------|
+| `account.created`      | Fired when a new account is successfully created.                           |
+| `account.updated`      | Fired when any field on an account is modified.                             |
+| `account.deleted`      | Fired when an account is permanently deleted.                               |
+| `search.quota_exceeded`| Fired when an account exhausts its search quota for the current period.     |
+| `api_key.rotated`      | Fired when an API key is rotated or revoked.                                |
+
+---
+
+## POST /webhooks
+
+Registers a new webhook endpoint. Once registered, Google will begin delivering event payloads to the specified URL immediately.
+
+### Body Parameters
+
+<ParamField body="url" type="string" required>
+  The publicly accessible HTTPS URL that Google should `POST` event payloads to. Must use `https://`.
+</ParamField>
+
+<ParamField body="events" type="array" required>
+  An array of event type strings to subscribe to (e.g. `["account.created", "account.updated"]`). Pass `["*"]` to subscribe to all events.
+</ParamField>
+
+<ParamField body="secret" type="string" required>
+  A secret string used to sign outgoing payloads with HMAC-SHA256. Store this securely — you will use it to verify that incoming requests genuinely originate from Google. See [Verifying Webhook Signatures](#verifying-webhook-signatures) below.
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X POST "https://api.google.com/v1/webhooks" \
+  -H "Authorization: Bearer <api_key>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://yourapp.example.com/webhooks/google",
+    "events": ["account.created", "account.updated", "search.quota_exceeded"],
+    "secret": "whsec_your_signing_secret"
+  }'
+```
+
+### Response Example
+
+```json
+{
+  "id": "wh_01hwzx3k9v2p8n4q",
+  "url": "https://yourapp.example.com/webhooks/google",
+  "events": [
+    "account.created",
+    "account.updated",
+    "search.quota_exceeded"
+  ],
+  "created_at": "2024-11-20T10:00:00Z"
+}
+```
+
+### Error Codes
+
+| HTTP Status | Description                                                                      |
+|-------------|----------------------------------------------------------------------------------|
+| `400`       | Missing required fields, non-HTTPS URL, or unrecognised event type.              |
+| `401`       | Missing or invalid API key.                                                       |
+| `409`       | A webhook is already registered for the provided URL.                            |
+
+---
+
+## GET /webhooks/\{id\}
+
+Retrieves the configuration of a registered webhook by its ID.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the webhook to retrieve.
+</ParamField>
+
+### Request Example
+
+```bash
+curl "https://api.google.com/v1/webhooks/wh_01hwzx3k9v2p8n4q" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response Example
+
+```json
+{
+  "id": "wh_01hwzx3k9v2p8n4q",
+  "url": "https://yourapp.example.com/webhooks/google",
+  "events": [
+    "account.created",
+    "account.updated",
+    "search.quota_exceeded"
+  ],
+  "created_at": "2024-11-20T10:00:00Z"
+}
+```
+
+### Error Codes
+
+| HTTP Status | Description                                             |
+|-------------|---------------------------------------------------------|
+| `401`       | Missing or invalid API key.                             |
+| `404`       | No webhook found with the provided `id`.                |
+
+---
+
+## DELETE /webhooks/\{id\}
+
+Removes a registered webhook. Google will immediately stop delivering events to the associated URL.
+
+### Path Parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the webhook to delete.
+</ParamField>
+
+### Request Example
+
+```bash
+curl -X DELETE "https://api.google.com/v1/webhooks/wh_01hwzx3k9v2p8n4q" \
+  -H "Authorization: Bearer <api_key>"
+```
+
+### Response Example
+
+A successful deletion returns HTTP `204 No Content` with an empty body.
+
+```json
+{}
+```
+
+### Error Codes
+
+| HTTP Status | Description                                             |
+|-------------|---------------------------------------------------------|
+| `401`       | Missing or invalid API key.                             |
+| `404`       | No webhook found with the provided `id`.                |
+
+---
+
+## Verifying Webhook Signatures
+
+Every event payload Google delivers includes an `X-Google-Signature` header containing an HMAC-SHA256 digest of the raw request body, signed with the `secret` you provided at registration time. **Always verify this signature before processing any webhook payload.**
+
+The signature is computed as:
+
+```
+HMAC-SHA256(secret, raw_request_body)
+```
+
+and transmitted as a lowercase hex-encoded string.
+
+<Warning>
+  **Always verify webhook signatures in production.** Skipping signature verification exposes your application to spoofed payloads from malicious third parties, which could trigger unintended actions in your system. Never process a webhook request without first confirming its authenticity.
+</Warning>
+
+<CodeGroup>
+
+```python Python
+import hmac
+import hashlib
+from flask import Flask, request, abort
+
+app = Flask(__name__)
+
+WEBHOOK_SECRET = "whsec_your_signing_secret"
+
+@app.route("/webhooks/google", methods=["POST"])
+def handle_webhook():
+    signature_header = request.headers.get("X-Google-Signature", "")
+    raw_body = request.get_data()  # Read raw bytes before any parsing
+
+    # Compute the expected signature
+    expected_signature = hmac.new(
+        key=WEBHOOK_SECRET.encode("utf-8"),
+        msg=raw_body,
+        digestmod=hashlib.sha256
+    ).hexdigest()
+
+    # Compare using a timing-safe equality check
+    if not hmac.compare_digest(expected_signature, signature_header):
+        abort(401, "Invalid webhook signature")
+
+    payload = request.get_json()
+    event_type = payload.get("type")
+
+    # Handle the event
+    if event_type == "account.created":
+        pass  # Your logic here
+    elif event_type == "search.quota_exceeded":
+        pass  # Your logic here
+
+    return "", 200
+```
+
+```javascript Node.js
+import crypto from "crypto";
+import express from "express";
+
+const app = express();
+const WEBHOOK_SECRET = "whsec_your_signing_secret";
+
+// Use raw body parser so we can compute the HMAC over the original bytes
+app.post(
+  "/webhooks/google",
+  express.raw({ type: "application/json" }),
+  (req, res) => {
+    const signatureHeader = req.headers["x-google-signature"] ?? "";
+    const rawBody = req.body; // Buffer
+
+    // Compute the expected signature
+    const expectedSignature = crypto
+      .createHmac("sha256", WEBHOOK_SECRET)
+      .update(rawBody)
+      .digest("hex");
+
+    // Compare using a timing-safe equality check
+    const signaturesMatch = crypto.timingSafeEqual(
+      Buffer.from(expectedSignature, "hex"),
+      Buffer.from(signatureHeader, "hex")
+    );
+
+    if (!signaturesMatch) {
+      return res.status(401).send("Invalid webhook signature");
+    }
+
+    const payload = JSON.parse(rawBody.toString("utf-8"));
+
+    // Handle the event
+    switch (payload.type) {
+      case "account.created":
+        // Your logic here
+        break;
+      case "search.quota_exceeded":
+        // Your logic here
+        break;
+    }
+
+    res.status(200).send();
+  }
+);
+```
+
+</CodeGroup>
+
+---
+
+## Retry Policy
+
+If your endpoint does not respond with an HTTP `2xx` status code within **10 seconds**, Google considers the delivery attempt a failure and will retry automatically. The retry schedule uses **exponential backoff**:
+
+| Attempt | Delay after previous failure |
+|---------|------------------------------|
+| 1st     | 30 seconds                   |
+| 2nd     | 2 minutes                    |
+| 3rd     | 10 minutes                   |
+| 4th     | 1 hour                       |
+| 5th     | 6 hours                      |
+
+After **5 consecutive failed attempts**, Google stops retrying and marks the webhook delivery as permanently failed. You can inspect failed deliveries in the Google developer dashboard and manually replay them if needed.
+
+To avoid unintended duplicate processing, ensure your webhook handler is **idempotent** — processing the same event payload more than once should produce the same outcome as processing it once.

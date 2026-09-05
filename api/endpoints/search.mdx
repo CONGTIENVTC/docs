@@ -1,0 +1,149 @@
+---
+title: "Search API Endpoints — Query and Retrieve Results"
+sidebarTitle: "Search"
+description: "Use GET /search to query the Google index. Supports full-text queries, filters by date, region, and content type, and returns paginated results."
+---
+
+The Search API gives you programmatic access to Google's search index. Submit a query and receive ranked, paginated results enriched with metadata — ideal for building search-powered applications, content discovery tools, or automated research pipelines.
+
+## GET /search
+
+Executes a search query against the Google index and returns a ranked list of matching results. You can narrow results by date range, geographic region, and content type, and page through large result sets using the built-in pagination controls.
+
+### Query Parameters
+
+<ParamField query="q" type="string" required>
+  The search query string. Supports natural-language queries, quoted phrases for exact matches (e.g. `"machine learning"`), and boolean operators (`AND`, `OR`, `NOT`).
+</ParamField>
+
+<ParamField query="page" type="integer" default={1}>
+  The page number of results to return. Starts at `1`. Use in combination with `per_page` to paginate through large result sets.
+</ParamField>
+
+<ParamField query="per_page" type="integer" default={10}>
+  The number of results to return per page. Minimum is `1`, maximum is `100`.
+</ParamField>
+
+<ParamField query="date_from" type="string">
+  Filter results to those published on or after this date. Must be a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) date string (e.g. `2024-01-01` or `2024-01-01T00:00:00Z`).
+</ParamField>
+
+<ParamField query="date_to" type="string">
+  Filter results to those published on or before this date. Must be a valid [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) date string (e.g. `2024-12-31` or `2024-12-31T23:59:59Z`).
+</ParamField>
+
+<ParamField query="region" type="string">
+  Restrict results to a specific geographic region using a two-letter country code. Examples: `us` (United States), `vn` (Vietnam), `gb` (United Kingdom), `de` (Germany). Defaults to a global result set when omitted.
+</ParamField>
+
+<ParamField query="content_type" type="string">
+  Filter results by content type. Accepted values:
+  - `web` — standard web pages (default)
+  - `image` — image results
+  - `news` — news articles
+</ParamField>
+
+### Request Example
+
+```bash
+curl -G "https://api.google.com/v1/search" \
+  -H "Authorization: Bearer <api_key>" \
+  --data-urlencode "q=open source machine learning" \
+  -d "page=1" \
+  -d "per_page=5" \
+  -d "date_from=2024-01-01" \
+  -d "region=us" \
+  -d "content_type=web"
+```
+
+### Response Example
+
+```json
+{
+  "data": [
+    {
+      "id": "res_01hwzx3k9v2p8n4q",
+      "title": "Top Open Source Machine Learning Frameworks in 2024",
+      "url": "https://example.com/blog/open-source-ml-frameworks",
+      "snippet": "A comprehensive overview of the most widely adopted open source machine learning frameworks, including PyTorch, TensorFlow, and scikit-learn, with benchmarks and use-case guidance.",
+      "relevance_score": 0.97
+    },
+    {
+      "id": "res_02jqar7m1c5t6b8w",
+      "title": "Getting Started with Open Source AI Tools",
+      "url": "https://example.com/guides/open-source-ai",
+      "snippet": "Learn how to set up and use the most popular open source AI and machine learning tools for research and production workloads.",
+      "relevance_score": 0.91
+    }
+  ],
+  "meta": {
+    "query": "open source machine learning",
+    "total_results": 1840000,
+    "page": 1,
+    "per_page": 5,
+    "total_pages": 368000
+  }
+}
+```
+
+### Response Fields
+
+<ResponseField name="data" type="array">
+  An array of result objects matching the search query.
+
+  <Expandable title="Result object fields">
+    <ResponseField name="data[].id" type="string">
+      A unique identifier for the search result.
+    </ResponseField>
+
+    <ResponseField name="data[].title" type="string">
+      The title of the result page or document as indexed by Google.
+    </ResponseField>
+
+    <ResponseField name="data[].url" type="string">
+      The canonical URL of the result.
+    </ResponseField>
+
+    <ResponseField name="data[].snippet" type="string">
+      A short excerpt from the page content, highlighting the most relevant passage to the query.
+    </ResponseField>
+
+    <ResponseField name="data[].relevance_score" type="number">
+      A floating-point score between `0.0` and `1.0` representing how closely the result matches the query. Higher is more relevant.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="meta" type="object">
+  Pagination and query metadata.
+
+  <Expandable title="Meta object fields">
+    <ResponseField name="meta.query" type="string">
+      The original query string submitted with the request.
+    </ResponseField>
+
+    <ResponseField name="meta.total_results" type="integer">
+      The estimated total number of results matching the query across the entire index.
+    </ResponseField>
+
+    <ResponseField name="meta.page" type="integer">
+      The current page number returned.
+    </ResponseField>
+
+    <ResponseField name="meta.per_page" type="integer">
+      The number of results returned per page.
+    </ResponseField>
+
+    <ResponseField name="meta.total_pages" type="integer">
+      The total number of pages available based on `total_results` and `per_page`.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+### Error Responses
+
+| HTTP Status | Error Code          | Description                                                                                     |
+|-------------|---------------------|-------------------------------------------------------------------------------------------------|
+| `400`       | `bad_query`         | The `q` parameter is missing, empty, or contains an invalid syntax (e.g. malformed boolean expression). |
+| `401`       | `unauthorized`      | The `Authorization` header is missing or the provided API key is invalid or expired.            |
+| `429`       | `rate_limit_exceeded` | You have exceeded your plan's request quota. Slow down and retry after the period indicated in the `Retry-After` response header. |
